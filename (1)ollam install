@@ -2,3 +2,11 @@ ysko kam meta ko Llama jasta Ai models local machine ma chalauna madat ghar6
 cd C:\PCS_AJAYA\download
 powershell -Command "irm https://ollama.com/install.ps1 | iex"
 
+Yadi tapai Ollama mai kam garna chahanuhunchha bhane, Claude ko sato Llama 3
+(Meta ko) ki ta Gemma (Google ko) chalauna saknuhunchha. Yo command haru chalaunuhos:
+
+ollama run gemma
+ollama run llama3
+
+Tapaiko computer ko Storage space (GB) khali garna ko lagi yo command chalaunuhos:
+ollama rm gemma
