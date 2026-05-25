@@ -1,0 +1,4 @@
+ysko kam meta ko Llama jasta Ai models local machine ma chalauna madat ghar6 
+cd C:\PCS_AJAYA\download
+powershell -Command "irm https://ollama.com/install.ps1 | iex"
+
