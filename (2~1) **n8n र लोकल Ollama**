@@ -1,0 +1,164 @@
+यहाँ **n8n र लोकल Ollama** प्रयोग गरेर आफ्नै कम्प्युटरमा पूर्ण रूपमा नि:शुल्क र १००% प्राइभेट **RAG (Retrieval-Augmented Generation)** सिस्टम बनाउने सम्पूर्ण गाइड नेपाली भाषामा तयार गरिएको छ।
+
+---
+
+## 🛠️ आवश्यक सफ्टवेयरहरू (Prerequisites)
+
+यो सिस्टम चलाउन तपाईंको कम्प्युटरमा यी सफ्टवेयरहरू इन्स्टल हुनुपर्छ:
+
+1. **Ollama:** लोकल एआई मोडलहरू चलाउनका लागि।
+2. **Node.js / npm वा Docker:** n8n इन्स्टल गरेर रन गर्नका लागि।
+
+---
+
+## 🚀 स्टेप-बाई-स्टेप सेटअप गाइड
+
+### स्टेप १: Ollama मा मोडलहरू डाउनलोड गर्ने
+
+सबैभन्दा पहिले आफ्नो कम्प्युटरको **Command Prompt (cmd)** खोल्नुहोस् र एआईको दिमाग (LLM) र फाइल बुझ्ने मोडल (Embedding) डाउनलोड गर्नुहोस्:
+
+```cmd
+:: मुख्य च्याट मोडल (Llama 3) डाउनलोड गर्न
+ollama run llama3
+
+:: डकुमेन्टलाई एआईले बुझ्ने भाषामा बदल्न (Embedding Model)
+ollama run nomic-embed-text
+
+```
+
+*(डाउनलोड पूरा भएपछि `ollama list` हानेर मोडलहरू आएको पक्का गर्नुहोस्।)*
+
+### स्टेप २: n8n सुरु गर्ने र अनुमति मिलाउने
+
+n8n लाई कम्प्युटरको लोकल फाइलहरू पढ्न दिनको लागि सुरक्षा अनुमति (Permissions) बन्द गरेर सुरु गर्नुपर्छ। नयाँ **cmd** खोलेर यो कमान्ड हान्नुहोस्:
+
+```cmd
+set N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+n8n start
+
+```
+
+अब आफ्नो ब्राउजरमा `http://localhost:5678` खोलेर n8n को ड्यासबोर्डमा जानुहोस् र एउटा नयाँ **Blank Canvas (खाली क्यानभास)** खोल्नुहोस्।
+
+### स्टेप ३: RAG वर्कफ्लो कोड पेस्ट गर्ने
+
+n8n को खाली क्यानभासको बीचमा माउसले एकपटक क्लिक गर्नुहोस् र आफ्नो किबोर्डमा **`Ctrl + V`** थिचेर यो तलको सम्पूर्ण JSON कोड पेस्ट गरिदिनुहोस्:
+
+```json
+{
+  "name": "Local Ollama RAG (Free & Private)",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "allowFileUploads": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 200],
+      "id": "chat-trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [250, 200],
+      "id": "ai-agent"
+    },
+    {
+      "parameters": {
+        "model": "llama3"
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [150, 400],
+      "id": "ollama-chat-model"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryWindowBuffer",
+      "typeVersion": 1,
+      "position": [280, 400],
+      "id": "window-memory"
+    },
+    {
+      "parameters": {
+        "name": "company_files_tool",
+        "description": "Use this tool to answer questions about the uploaded company documents and files."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [420, 400],
+      "id": "vector-store-tool"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1,
+      "position": [450, 200],
+      "id": "in-memory-store"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [450, -20],
+      "id": "ollama-embeddings"
+    }
+  ],
+  "connections": {
+    "chat-trigger": { "main": [[{ "node": "ai-agent", "type": "main", "index": 0 }]] },
+    "ollama-chat-model": { "model": [[{ "node": "ai-agent", "type": "model", "index": 0 }]] },
+    "window-memory": { "memory": [[{ "node": "ai-agent", "type": "memory", "index": 0 }]] },
+    "vector-store-tool": { "tool": [[{ "node": "ai-agent", "type": "tool", "index": 0 }]] },
+    "in-memory-store": { "vectorStore": [[{ "node": "vector-store-tool", "type": "vectorStore", "index": 0 }]] },
+    "ollama-embeddings": { "embedding": [[{ "node": "in-memory-store", "type": "embedding", "index": 0 }]] }
+  }
+}
+
+```
+
+---
+
+## 📊 यो RAG वर्कफ्लोको संरचना (Architecture)
+
+पेस्ट गरेपछि तपाईंको स्क्रिनमा एआईका नोडहरू यसरी जोडिएका देखिनेछन्:
+
+```text
+[Chat Trigger] ➔ [AI Agent (दिमाग)]
+                      │
+   ┌──────────────────┼──────────────────┐
+   ▼                  ▼                  ▼
+[Model Ollama]  [Window Memory]  [Vector Store Tool]
+(llama3)         (कुराकानी सम्झिने)        │
+                                   [In-Memory Store] ➔ [Embeddings Ollama]
+                                   (फाइल सेभ गर्ने)      (nomic-embed-text)
+
+```
+
+---
+
+## 📈 सिस्टमलाई एक्टिभ गर्ने र टेस्ट गर्ने तरिका
+
+1. **सेभ गर्ने:** n8n को माथि दाहिने पट्टि रहेको **`Save`** बटन थिच्नुहोस्।
+2. **रन गर्ने:** स्क्रिनको तल रहेको **`Execute Workflow`** बटनमा क्लिक गर्नुहोस्।
+3. **च्याट विन्डो खोल्ने:** क्यानभासको तल बायाँपट्टि एउटा सानो **Chat** बक्स वा पप-अप देखिनेछ, त्यसमा क्लिक गर्नुहोस्।
+4. **फाइल अपलोड र प्रश्न सोध्ने:**
+* च्याट बक्सको कुनामा भएको **`+` वा Clip (Attachment)** बटनमा थिचेर आफ्नो कम्प्युटरबाट कुनै PDF वा TXT फाइल अपलोड गर्नुहोस्।
+* फाइल लोड भएपछि सोध्नुहोस्: *"यो फाइलमा के लेखिएको छ, नेपालीमा बुझाइदेऊ।"*
+
+
+
+---
+
+## ⚠️ केही समस्या आएमा (Troubleshooting)
+
+* **Failed to receive response एरर आएमा:** ब्राउजरमा `http://localhost:11434` खोलेर हेर्नुहोस्। त्यहाँ `Ollama is running` देखिनुपर्छ। यदि देखिएन भने ओल्लामा एप फेरि सुरु गर्नुहोस्।
+* **n8n Docker मा छ भने:** `Model Ollama` र `Embeddings Ollama` नोड भित्र भएको **Base URL** मा `http://localhost:11434` को सट्टा **`http://host.docker.internal:11434`** लेखिदिनुहोस्।
+
+अब तपाईंको कम्पनीको डकुमेन्टहरू सिधै च्याटमा हालेर पूर्ण रूपमा प्राइभेट लोकल एआईसँग नेपालीमै कुराकानी गर्न सक्नुहुन्छ!
