@@ -10,3 +10,9 @@ ollama run llama3
 
 Tapaiko computer ko Storage space (GB) khali garna ko lagi yo command chalaunuhos:
 ollama rm gemma
+
+2. **Sabai delete bhayo ki nai check garna:**
+   `ollama rm gemma` garye pachi feri `ollama list` garera hernus, tya `gemma` dekhaundaina,
+yas ko matlab tyo model ra tesle khayeko space sabai computer bata delete bhyskyo. 
+
+Arko kunai naya model (jastai Llama 3) halna ya aru kehi sodhna parne chha?
