@@ -1,0 +1,271 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -784,
+        -144
+      ],
+      "id": "87dce6d4-078a-4a37-9435-92f19e4f643b",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "B5DPfxxjgbU9Iwvd",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1qja14U8S1jUxdWNFFhAl1ZH2yEVXopow",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -560,
+        -144
+      ],
+      "id": "0bb98850-0669-4824-b9e9-3e0e391c52ab",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "S6bV3GlqYrj3dfEf",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -336,
+        -144
+      ],
+      "id": "2a75ac74-f5f6-4440-bded-a6ef1e49b57a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ `तपाईं कम्पनीको एउटा जिम्मेवार र विनम्र एआई सहायक हुनुहुन्छ।\n\n[नियमहरू]:\n१. उपलब्ध गराइएको Vector Store (कम्पनीको डेटा) टूल प्रयोग गरेर ग्राहकले खोजेको विवरण वा इमेलमा सोधिएको कुरा स्पष्ट रूपमा फेला पर्यो भने मात्र त्यसको जवाफ दिनुहोस्।\n२. यदि ग्राहकले सोधेको कुरा डाटामा फेला परेन, डाटा खाली छ, वा कुनै कुरा मिलेन भने, अरू कुनै गफ नलेखिकन सिधै यो मात्र जवाफ लेख्नुहोस्:\n「担当者からご連絡します。」\n\nग्राहकको इमेल:\n${ $('Gmail Trigger').item.json.bodyPlain || \"नयाँ इमेल\" }` }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -80,
+        -144
+      ],
+      "id": "fef1e9e4-d27d-45a8-a264-4983216e1ed0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        96
+      ],
+      "id": "9110428e-d675-4aa0-9df7-c2005eda0aec",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GDG6FxtcbwMW6UIF",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "company_ip_data",
+        "description": "Use this tool to search for company IP addresses and disposal dates (廃棄日) requested by the client in the email."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        64,
+        96
+      ],
+      "id": "6cc30273-2c72-4ddd-9f12-9cb422c6f641",
+      "name": "Vector Store Tool",
+      "notesInFlow": true
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1,
+      "position": [
+        64,
+        288
+      ],
+      "id": "c2eb3015-13e9-482d-aa27-d1d34cf7fc9b",
+      "name": "In-Memory Vector Store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        464
+      ],
+      "id": "ffe642c0-9789-4826-a3a6-6f1935a03830",
+      "name": "OpenAI Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "GDG6FxtcbwMW6UIF",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Gmail Trigger').item.json.from.value[0].address }}",
+        "subject": "PCS",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        304,
+        -144
+      ],
+      "id": "ba308d1d-3999-4eb9-bc17-b2b7a4242875",
+      "name": "Send a message",
+      "webhookId": "4f848eb5-f263-446a-9def-06f4f06af118",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "B5DPfxxjgbU9Iwvd",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In-Memory Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "In-Memory Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "e21faceaec9dc15fc0b5d59c0ece8f4b950f9f4f980b3563c13c02cb23b6d2fd"
+  }
+}
+
