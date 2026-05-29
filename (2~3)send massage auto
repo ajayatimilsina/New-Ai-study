@@ -1,0 +1,258 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        -80
+      ],
+      "id": "7796ee49-91bb-4729-92bb-54ce2fe83535",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "B5DPfxxjgbU9Iwvd",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6b13439e-d421-412e-ae28-6b6b3e5e2bf7",
+              "name": "customerEmail",
+              "value": "={{ $json['From'] || $json.from?.text }}",
+              "type": "string"
+            },
+            {
+              "id": "e3190dad-1139-45a1-8f6c-b1396464f4c6",
+              "name": "emailSubject",
+              "value": "={{ $json.subject || \"No Subject\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        -80
+      ],
+      "id": "62b4c67f-870f-4c09-bcbd-984db0635cdd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1qja14U8S1jUxdWNFFhAl1ZH2yEVXopow",
+          "mode": "list",
+          "cachedResultName": "Ipアドレス0527.csv"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        272,
+        -80
+      ],
+      "id": "97702cb5-d09e-4d63-8313-1c816aa7b120",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "S6bV3GlqYrj3dfEf",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        -80
+      ],
+      "id": "407adede-0660-401f-9cd8-578ddd256e16",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "let allItems = $input.all();\nif (!allItems || allItems.length === 0) {\n  return [{ json: { companyData: \"कुनै डाटा फेला परेन।\" } }];\n}\nlet textList = allItems.map(item => {\n  const raw = item.json || {};\n  const date = raw['廃棄日'] || raw['date'] || \"मिति खुलाइएको छैन\";\n  const ip = raw['IP Address'] || raw['ip'] || \"IP फेला परेन\";\n  return `मिति: ${date}, IP: ${ip}`;\n}).join(\"\\n\");\nreturn [{ json: { companyData: textList } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        -80
+      ],
+      "id": "d416124c-194b-441d-8b6b-392a057fa91e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "{{ `あなたは企業の信頼できる優秀なAIカスタマーサポートアシスタントです。\n届いたお客様からのメールに対して、日本のビジネスマナーに則った、丁寧で誠実な返信文を長文で作成してください。\n\n【重要なルール】\n1. 提供された「会社のデータ」の中にお客様が探している情報（日付やIPアドレスなど）が明確に見つかった場合は、その詳細を丁寧に説明する返信文を作成してください。\n2. もしデータが見つからない場合、データが空の場合、または少しでも不確実な場合は、独自の判断で嘘を答えず、必ず以下の【丁寧な定型文】をベースに、前後の挨拶を含めた正式なビジネスメールを作成してください。勝手な案内文を作ってはいけません。\n\n【丁寧な定型文（データがない場合）】\nいつもお世話になっております。\nこの度は、弊社へお問い合わせいただき誠にありがとうございます。\n\nご質問いただきました件につきまして、大変恐れ入りますが、現在AIアシスタント側でお調べしたところ、該当する詳細データを確認することができませんでした。\n\nそのため、本件につきましては、より正確な確認を行うため、追って弊社の担当者より改めて詳しく調査の上、個別にご連絡を差し上げます。\n\n担当者からの連絡まで、今しばらくお待ちいただけますようお願い申し上げます。\nお客様にはご不便をおかけし大変恐縮ですが、何卒ご理解とご協力を賜りますようお願い申し上げます。\n\n-----------------------------------------\n会社のデータ:\n${$json.companyData || \"データなし\"}\n\nお客様のメール:\n${$('Gmail Trigger').item?.json?.bodyPlain || \"新しいメール\"}` }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        896,
+        -80
+      ],
+      "id": "2137af74-352d-4cba-891c-13e6dc2eda01",
+      "name": "AI Agent",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        128
+      ],
+      "id": "f24d8547-15cb-4d1d-8704-1e3012f36e4c",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GDG6FxtcbwMW6UIF",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Edit Fields').first().json.customerEmail }}",
+        "subject": "=Re: {{ $('Edit Fields').first().json.emailSubject }}",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        -80
+      ],
+      "id": "d93e37ab-4426-49ed-90df-daa3aa2c2077",
+      "name": "Send a message",
+      "webhookId": "543669bd-9504-4a24-97e1-ddae1ffc3663",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "8AAwzs7ORiyxG1U3",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "e21faceaec9dc15fc0b5d59c0ece8f4b950f9f4f980b3563c13c02cb23b6d2fd"
+  }
+}
