@@ -1,0 +1,314 @@
+
+
+{
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "from:ajayatimilsina@gmail.com",
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "id": "6010e558-48be-499c-b93f-4b34304ab17f",
+      "name": "New Email Received",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -112,
+        80
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bqoVIW6mV0S3n1QW",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=# Role\nYou are an advanced AI Email Assistant. Your job is to automatically draft a reply (Replai) to incoming emails from a specific contact, based on provided reference context.\n\n# Instructions\n1. Read the incoming email carefully:\n   - Subject: {{ $json.subject }}\n   - Body: {{ $json.text }}\n\n2. Search and use the retrieved knowledge/past email history from the connected Vector Store (RAG) to provide an accurate, factual, and contextual response. Do not make up information that is not in the context.\n\n3. Keep the tone helpful, polite, and professional.\n\n4. Write the response in the same language as the incoming email (Nepali, Japanese, or English), unless specified otherwise in the context.\n\n# Constraints\n- Output ONLY the final email body text.\n- Do NOT include any meta-commentary, explanations, or introductory text like \"Here is the reply:\" or \"Certainly, I can help with that.\"\n- Do NOT include placeholders like \"[Your Name]\" at the end unless it is explicitly provided in the context. Just finish with a natural closing.",
+        "options": {
+          "systemMessage": "You are a helpful email assistant. Use the retrieved context from the knowledge base to draft accurate, professional email replies. Always respond in the same language as the incoming email."
+        }
+      },
+      "id": "84d8c69d-bba9-410b-ac8e-c18233d8f9a4",
+      "name": "Draft Email Reply",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        192,
+        80
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "e31a1f1c-0257-4357-a0b8-d207bb2b2512",
+      "name": "RAG Retriever",
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        352,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "memoryKey": {
+          "__rl": true,
+          "value": "my_email_rag_key",
+          "mode": "id"
+        }
+      },
+      "id": "32f7e027-c577-4f94-862a-fb192f577990",
+      "name": "Knowledge Base",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "reply",
+        "messageId": "={{ $('New Email Received').item.json.id }}",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "df4c2fb8-61d0-470a-b20c-8b05d58391fe",
+      "name": "Send Reply",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        80
+      ],
+      "webhookId": "da8fdd51-8422-4eec-8c2d-e5a0854a76a6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bqoVIW6mV0S3n1QW",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        288
+      ],
+      "id": "b9b455ae-cf82-4311-b9c0-0e18e10518c7",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "3uksy5XOaI2zt9i7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "my_email_rag_key",
+          "mode": "id"
+        }
+      },
+      "id": "58d2c91a-ff41-4b8a-8398-22061f18c151",
+      "name": "Insert Into Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        896,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "fileName",
+                "value": "={{ $json.fileName }}"
+              },
+              {
+                "name": "source",
+                "value": "Local File System"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6e51c1f6-7848-4b98-a449-15330cced231",
+      "name": "Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "id": "738a072f-a667-4dd4-8424-0d3140691011",
+      "name": "Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        480
+      ],
+      "id": "4233a5c7-603a-4b16-8a96-76d651008b4a",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\PCS_AJAYA\\company_files\\*",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        480
+      ],
+      "id": "4dd86768-87d1-4990-b367-2c73909bc116",
+      "name": "Read/Write Files from Disk"
+    }
+  ],
+  "connections": {
+    "New Email Received": {
+      "main": [
+        [
+          {
+            "node": "Draft Email Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Email Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Knowledge Base": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "RAG Retriever",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Draft Email Reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert Into Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Insert Into Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "14064b1662339992e021a02813d300dd1250e620ea9e2f06b98be904832066b3"
+  }
+}
