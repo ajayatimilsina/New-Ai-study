@@ -1,0 +1,95 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "0f35d50b-e416-41dd-9066-497e58263809",
+      "name": "Schedule Trigger (Every Day at 1 AM)"
+    },
+    {
+      "parameters": {
+        "filters": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        0
+      ],
+      "id": "c206fc6a-0e91-45b6-859b-966fdb029fab",
+      "name": "Get All Workflows"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": {
+          "__rl": true,
+          "value": "https://github.com/ajayatimilsina/n8n-backups.git",
+          "mode": "url"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "n8n-backups",
+          "mode": "name"
+        }
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        128,
+        0
+      ],
+      "id": "23f57d77-701c-45e9-bfec-fa5eef88544f",
+      "name": "Upload to GitHub",
+      "webhookId": "977826b4-ea56-4539-86a1-d11486f3950d",
+      "credentials": {
+        "githubApi": {
+          "id": "u5qSA5CufTtIGzUm",
+          "name": "GitHub account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Every Day at 1 AM)": {
+      "main": [
+        [
+          {
+            "node": "Get All Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Workflows": {
+      "main": [
+        [
+          {
+            "node": "Upload to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "14064b1662339992e021a02813d300dd1250e620ea9e2f06b98be904832066b3"
+  }
+}
