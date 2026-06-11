@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple POS & Barcode Reader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        .container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
+        #interactive.viewport { width: 100%; height: 250px; background: #000; border-radius: 8px; overflow: hidden; position: relative; }
+        #interactive.viewport video { width: 100%; height: 100%; object-fit: cover; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .total { font-size: 20px; font-weight: bold; color: #e74c3c; margin-top: 15px; text-align: right; }
+        button { background: #2ecc71; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #27ae60; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <h1>POS System with Barcode Reader</h1>
+    <p>Camera ma barcode dekhayera saman bechna ra hisab garna sakin6.</p>
+
+    <div class="container">
+        <div class="box">
+            <h2>1. Scan / Add Item (Saman थप्नुहोस्)</h2>
+            <div id="interactive" class="viewport"></div>
+            <p style="color: gray; font-size: 12px;">※ Camera ko agadi barcode rakhnuhos.</p>
+            
+            <hr>
+            <h3>Manual Input (Barcode nabhaye)</h3>
+            <label>Barcode/ID: </label><input type="text" id="manual-bc" value="123456"><br><br>
+            <label>Saman ko Name: </label><input type="text" id="manual-name" value="Sample Item"><br><br>
+            <label>Price (Rs/¥): </label><input type="number" id="manual-price" value="500"><br><br>
+            <button onclick="addManualItem()">Saman Thapnu (Add)</button>
+        </div>
+
+        <div class="box">
+            <h2>2. Cart & Hisab Kitab (बिल र हिसाब)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Saman (Item)</th>
+                        <th>Price</th>
+                        <th>Qty</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="cart-table">
+                    </tbody>
+            </table>
+            
+            <div class="total">
+                Grand Total: <span id="grand-total">0</span>
+            </div>
+            <br>
+            <button onclick="checkout()">Bechnu (Sell / Checkout)</button>
+            <button class="btn-danger" onclick="clearCart()">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        // サンプルの商品データ（データベースの代わり）
+        // Mock Database: Barcode => { Name, Price }
+        const itemDatabase = {
+            "4902105051000": { name: "Nissin Cup Noodle", price: 180 },
+            "4901340053618": { name: "Mitsuya Cider", price: 120 },
+            "123456": { name: "Momo (Nepali Dumpling)", price: 600 }
+        };
+
+        let cart = {};
+
+        // --- 1. カメラスキャナーの初期化 (QuaggaJS) ---
+        Quagga.init({
+            inputStream : {
+                name : "Live",
+                type : "LiveStream",
+                target: document.querySelector('#interactive'),
+                constraints: { facingMode: "environment" } // 背面カメラを使用
+            },
+            decoder : {
+                readers : ["code_128_reader", "ean_reader", "ean_8_reader"] // 主要なバーコード規格
+            }
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            console.log("Initialization finished. Ready to start");
+            Quagga.start();
+        });
+
+        // バーコードを検知したときの処理
+        let lastResult = "";
+        Quagga.onDetected(function(data) {
+            let code = data.codeResult.code;
+            
+            // 連続で同じバーコードを読み込まないように数秒のディレイをかける
+            if (lastResult === code) return;
+            lastResult = code;
+            setTimeout(() => { lastResult = ""; }, 2000); 
+
+            alert("Barcode Scanned: " + code);
+            addToCart(code);
+        });
+
+        // --- 2. カート＆計算（Hisab Kitab）のロジック ---
+        
+        // カートに商品を追加
+        function addToCart(barcode) {
+            let item = itemDatabase[barcode];
+            
+            if (!item) {
+                // データベースにない場合、新規登録を促す
+                let name = prompt("Naya saman vetiyo! Saman ko naam rakhnuhos:");
+                let price = prompt("Saman ko price (amount) rakhnuhos:");
+                if(name && price) {
+                    itemDatabase[barcode] = { name: name, price: parseInt(price) };
+                    item = itemDatabase[barcode];
+                } else {
+                    return;
+                }
+            }
+
+            if (cart[barcode]) {
+                cart[barcode].qty += 1;
+            } else {
+                cart[barcode] = { name: item.name, price: item.price, qty: 1 };
+            }
+
+            updateUI();
+        }
+
+        // 手動入力で商品を追加
+        function addManualItem() {
+            let bc = document.getElementById('manual-bc').value;
+            let name = document.getElementById('manual-name').value;
+            let price = parseInt(document.getElementById('manual-price').value);
+
+            itemDatabase[bc] = { name: name, price: price };
+            addToCart(bc);
+        }
+
+        // 画面（テーブルと合計金額）を更新
+        function updateUI() {
+            let tableBody = document.getElementById('cart-table');
+            tableBody.innerHTML = "";
+            let grandTotal = 0;
+
+            for (let barcode in cart) {
+                let item = cart[barcode];
+                let itemTotal = item.price * item.qty;
+                grandTotal += itemTotal;
+
+                let row = `<tr>
+                    <td>${item.name}</td>
+                    <td>${item.price}</td>
+                    <td>${item.qty}</td>
+                    <td>${itemTotal}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            }
+
+            document.getElementById('grand-total').textContent = grandTotal;
+        }
+
+        // 会計（売った後）
+        function checkout() {
+            let total = document.getElementById('grand-total').textContent;
+            if (total == "0") {
+                alert("Cart khali 6!");
+                return;
+            }
+            alert("Saman bechiyo! Total Hisab: " + total + "\nDhanyabad!");
+            clearCart();
+        }
+
+        // カートをクリア
+        function clearCart() {
+            cart = {};
+            updateUI();
+        }
+    </script>
+</body>
+</html>
